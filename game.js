@@ -24,6 +24,10 @@ const pause = new Image();
 pause.src = "image/pause.png";
 const play = new Image();
 play.src = "image/play.png";
+const click = new Image();
+click.src = "image/click.png";
+const swipe = new Image();
+swipe.src = "image/swipe.png";
 
 //Control the game
 document.addEventListener("click", function(evt) {
@@ -31,42 +35,54 @@ document.addEventListener("click", function(evt) {
     let clickX = evt.clientX - rect.left;
     let clickY = evt.clientY - rect.top;
 
-    switch (state.current) {
-        case state.getReady:
+        if (state.current == state.getReady) {
             //Start game
             if (clickX >= getReady.x - getReady.d && clickX <= getReady.x + getReady.d && clickY >= getReady.y * 2 - getReady.d && clickY <= getReady.y * 2 + getReady.d) {
             state.current = state.game;
-            break;
             }
 
             //Increase speed
             if (clickX >= snake.sX * 3 + snake.d && clickX <= snake.sX * 3 + snake.d * 3 && clickY >= snake.sY && clickY <= snake.sY + snake.d * 2 && snake.speed > 4) {
                 snake.speed -= 2;
-                break;
             }
 
             //Decrease speed
             if (clickX >= snake.sX - snake.d * 3 && clickX <= snake.sX - snake.d && clickY >= snake.sY && clickY <= snake.sY + snake.d * 2 && snake.speed < 18) {
                 snake.speed += 2;
-                break;
             }
 
             //Box mode choose
             if (clickX >= getReady.x - getReady.d && clickX <= getReady.x && clickY >= getReady.y * 3 - getReady.d/4 && clickY <= getReady.y * 3 - getReady.d/4 + getReady.d) {
                 snake.mode = 1;
-                break;
             }
 
             //Tele mode choose
             if (clickX >= getReady.x && clickX <= getReady.x + getReady.d && clickY >= getReady.y * 3 - getReady.d/4 && clickY <= getReady.y * 3 - getReady.d/4 + getReady.d) {
                 snake.mode = 0;
-                break;
             }
-        case state.game:
+
+            //Click control type choose
+            if (clickX >= getReady.x && clickX <= getReady.x + getReady.d * 2/3 && clickY >= getReady.y * 4.25 && clickY <= getReady.y * 4.25 + getReady.d * 2/3) {
+                getReady.check = 0;
+            }
+
+            //Swipe control type check
+            if (clickX >= getReady.x + getReady.d * 2/3 && clickX <= getReady.x + getReady.d * 4/3 && clickY >= getReady.y * 4.25 && clickY <= getReady.y * 4.25 + getReady.d * 2/3) {
+                getReady.check = 1;
+            }
+        }
+
+        if (state.current == state.pause) {
+            //Play game continue
+            if (clickX >= cvs.width - 50 && clickX <= cvs.width && clickY >= cvs.height - 50 && clickY <= cvs.height) {
+                game.cardinal = 1;
+            }
+        }
+
+        if (state.current == state.game) {
             //Pause game
             if (clickX >= cvs.width - 50 && clickX <= cvs.width && clickY >= cvs.height - 50 && clickY <= cvs.height) {
                 state.current = state.pause;
-                break;
             }
 
             //Home button click
@@ -74,8 +90,8 @@ document.addEventListener("click", function(evt) {
                 snake.reset();
                 score.reset();
                 apple.reset();
+                big.reset();
                 state.current = state.getReady;
-                break;
             }
 
             //Replay button click
@@ -83,61 +99,139 @@ document.addEventListener("click", function(evt) {
                 snake.reset();
                 score.reset();
                 apple.reset();
-                break;
+                big.reset();
             }
-        case state.over:
+
+            //Control the game (mouse)
+            if (getReady.check == 0 && clickX >= 0 && clickX <= cvs.width && clickY >= 0 && clickY < cvs.height) {
+                let p = snake.position[0];
+
+                if (snake.mX != 0) {
+                    snake.mX = 0;
+
+                    if (clickY > (cvs.height - 50)/2) {
+                        snake.mY = 20;
+                    }
+                    
+                    if (clickY < (cvs.height - 50)/2) {
+                        snake.mY = - 20;
+                    }
+                }else if (snake.mY != 0) {
+                    snake.mY = 0;
+
+                    if (clickX > cvs.width/2) {
+                        snake.mX = 20;
+                    }
+                    
+                    if (clickX < cvs.width/2) {
+                        snake.mX = - 20;
+                    }
+                }
+            }
+        }
+
+        if (state.current ==  state.over) {
             //Home button click
             if (clickX >= over.p - 2/3 * over.d && clickX <= over.p && clickY >= over.p && clickY <= over.p + 2/3 * over.d) {
                 snake.reset();
                 score.reset();
+                apple.reset();
+                big.reset();
                 state.current = state.getReady;
-                break;
             }
 
             //Replay button click
             if (clickX >= over.p&& clickX <= over.p + 2/3 * over.d && clickY >= over.p && clickY <= over.p + 2/3 * over.d) {
                 snake.reset();
                 score.reset();
+                apple.reset();
+                big.reset();
                 state.current = state.game;
-                break;
             }
-        case state.pause:
-            //Play game continue
-            if (clickX >= cvs.width - 50 && clickX <= cvs.width && clickY >= cvs.height - 50 && clickY <= cvs.height) {
-                game.cardinal = 1;
-                break;
-            }
-    }
+        }
 })
+
+//Control the snake (keyboard)
 document.addEventListener("keypress", (event) => {
     if (state.current == state.game) {
         var key = event.code;
 
         //Right arrow button
-        if (key == "KeyD" && snake.mX !== - 20) {
-            snake.mX = 20;
-            snake.mY = 0;
+        if (snake.mX !== - 20) {
+            if (key == "KeyD" || key == "KeyL") {
+                snake.mX = 20;
+                snake.mY = 0;
+            }
         }
 
         //Left arrow button
-        if (key == "KeyA" && snake.mX !== 20) {
-            snake.mX = - 20;
-            snake.mY = 0;
+        if (snake.mX !== 20) {
+            if (key == "KeyA" || key == "KeyJ") {
+                snake.mX = - 20;
+                snake.mY = 0;
+            }
         }
 
         //Down arrow button
-        if (key == "KeyS" && snake.mY !== - 20) {
-            snake.mX = 0;
-            snake.mY = 20;
+        if (snake.mY !== - 20) {
+            if (key == "KeyS" || key == "KeyK") {
+                snake.mX = 0;
+                snake.mY = 20;
+            }
         }
 
         //Up arrow button
-        if (key == "KeyW" && snake.mY !== 20) {
-            snake.mX = 0;
-            snake.mY = - 20;
+        if (snake.mY !== 20) {
+            if (key == "KeyW" || key == "KeyI") {
+                snake.mX = 0;
+                snake.mY = - 20;
+            }
         }
     }
 }, false)
+
+//Control the snake (screen)
+const clickKey = {
+    upX : 0,
+    upY : 0,
+    downX : 0,
+    downY : 0
+}
+document.addEventListener("mousedown", function(evt) {
+    let rect = cvs.getBoundingClientRect();
+    clickKey.downX = evt.clientX - rect.left;
+    clickKey.downY = evt.clientY - rect.top;
+})
+document.addEventListener("mouseup", function(evt) {
+    let rect = cvs.getBoundingClientRect();
+    clickKey.upX = evt.clientX - rect.left;
+    clickKey.upY = evt.clientY - rect.top;
+
+    //Compare when release the mouse
+    if (getReady.check == 1 && clickKey.downX > 0 && clickKey.downX < cvs.width && clickKey.downY > 0 && clickKey.downY < cvs.height - 50 && clickKey.upX > 0 && clickKey.upX < cvs.width && clickKey.upY > 0 && clickKey.upY < cvs.height - 50) {
+        if (snake.mX != 0) {
+            if (clickKey.downY < clickKey.upY) {
+                snake.mX = 0;
+                snake.mY = 20;
+            }
+
+            if (clickKey.downY > clickKey.upY) {
+                snake.mX = 0;
+                snake.mY = - 20;
+            }
+        }else if (snake.mY != 0) {
+            if (clickKey.downX < clickKey.upX) {
+                snake.mY = 0;
+                snake.mX = 20;
+            }
+
+            if (clickKey.downX > clickKey.upX) {
+                snake.mY = 0;
+                snake.mX = - 20;
+            }
+        }
+    }
+})
 
 //Game state
 const state = {
@@ -196,14 +290,20 @@ const getReady = {
             ctx.drawImage(tele, 0, 0, 128, 128, this.x, this.y * 3 - this.d/4, this.d, this.d);
 
             //Mode check 
-            if (snake.mode == 1) {
-                this.check = this.d;
-            }else if (snake.mode == 0) {
-                this.check = 0;
-            }
             ctx.lineWidth = 5;
             ctx.strokeStyle = "#696969";
-            ctx.strokeRect(this.x - this.check, this.y * 3 - this.d/4, this.d, this.d);
+            ctx.strokeRect(this.x - snake.mode * this.d, this.y * 3 - this.d/4, this.d, this.d);
+
+            //Click control type
+            ctx.drawImage(click, this.x, this.y * 4.25, this.d * 2/3, this.d * 2/3);
+
+            //Swipe control type
+            ctx.drawImage(swipe, this.x + this.d * 2/3, this.y * 4.25, this.d * 2/3, this.d * 2/3);
+
+            //Control type check
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#696969";
+            ctx.strokeRect(this.x + this.check * this.d * 2/3, this.y * 4.25, this.d * 2/3, this.d * 2/3);
 
             //Author
             if (state.current == state.getReady) {
@@ -212,6 +312,50 @@ const getReady = {
                 ctx.font = "20px Teko";
                 ctx.fillText("By Vu Quang", 10, cvs.height - 30);
                 ctx.fillText("I know its old, but i tried my best, hope you enjoy it:<", 10, cvs.height - 10);
+            }
+        }
+    }
+}
+
+//Game
+const game = {
+    count : 0,
+    cardinal : 0,
+    distance : 50,
+
+    draw : function() {
+        //Draw pause button (in game state) and play button (in pause state)
+        if (state.current == state.game) {
+            ctx.drawImage(pause, 0, 0, 128, 128, cvs.width - this.distance, cvs.height - this.distance, this.distance, this.distance);
+        }else if (state.current == state.pause) {
+            ctx.drawImage(play, 0, 0, 128, 128, cvs.width - this.distance, cvs.height - this.distance, this.distance, this.distance);
+        }
+
+        //Draw the bar of time delay before continue play game
+        if (this.cardinal > 0) {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(cvs.width - 250, cvs.height - 40, 90 - this.count, 30);
+        }
+
+        //Draw home button
+        if (state.current == state.game || state.current == state.pause) {
+            ctx.drawImage(home, cvs.width - this.distance * 3, cvs.height - this.distance, this.distance, this.distance);
+        }
+
+        //Draw replay button
+        if (state.current == state.game || state.current == state.pause) {
+            ctx.drawImage(reload, cvs.width - this.distance * 2, cvs.height - this.distance, this.distance, this.distance);
+        }
+    },
+
+    update : function() {
+        //Delay the game a bit after click the play button
+        if (this.cardinal > 0) {
+            this.count += this.cardinal;
+            if (this.count == 90) {
+                state.current = state.game;
+                this.cardinal = 0;
+                this.count = 0;
             }
         }
     }
@@ -262,8 +406,6 @@ const snake = {
     mode : 0,
 
     count : 0,
-    big : 0,
-    bigCount : 0,
 
     draw : function() {
         //Snake
@@ -325,19 +467,17 @@ const snake = {
             }
 
             //When the snake eat the apple
-            if (this.big && this.position[0].x == apple.x * apple.d && this.position[0].y == apple.y * apple.d) {
+            if (big.check == 0 && this.position[0].x == apple.x * apple.d && this.position[0].y == apple.y * apple.d) {
                 //Add new position for apple
-                apple.x = (Math.random()*24).toFixed(0);
-                apple.y = (Math.random()*24).toFixed(0);
+                apple.reset();
 
                 //Change again if dulicate
                 for (let i = 0; i < this.position.length; i++) {
                     let p = this.position[i];
         
                     if (apple.x == p.x && apple.y == p.y) {
-                        apple.x = (Math.random()*24).toFixed(0);
-                        apple.y = (Math.random()*24).toFixed(0);
-                        return;
+                        apple.reset();
+                        i = 0;
                     }
                 }
 
@@ -352,12 +492,10 @@ const snake = {
                 })
             }
 
-            //Apple can not spawn in the box skin
-            if (this.big == 0 && this.mode == 1) {
+            //Apple can not spawn in the box shell
+            if (this.mode == 1) {
                 if (apple.x == 0 || apple.y == 0 || apple.x == 24 || apple.y == 24) {
-                    apple.x = (Math.random()*24).toFixed(0);
-                    apple.y = (Math.random()*24).toFixed(0);
-                    return;
+                    apple.reset();
                 }
             }
 
@@ -370,44 +508,38 @@ const snake = {
                 }
             }
 
-            //Draw a big apple each 5 mini apple
-            if (this.count % 5 == 0) {
-                this.big = 1;
-            }
-
-            //Big condition in tele
-            if (this.big == 1 && this.mode == 0) {
-                if (apple.x == 24 || apple.y == 24 ) {
-                    apple.x = (Math.random()*24).toFixed(0);
-                    apple.y = (Math.random()*24).toFixed(0);
-                }
+            //Draw a big each 5 mini apple
+            if (this.count == 5) {
+                big.check = 1;
+                this.count = 0;
             }
             
-            //Big condition in box
-            if (this.big == 1 && this.mode == 1) {
-                if (apple.x == 0 || apple.x >= 23 || apple.y == 0 || apple.y >= 23) {
-                    apple.x = (Math.random()*24).toFixed(0);
-                    apple.y = (Math.random()*24).toFixed(0);
+            //Big condition in box mode
+            if (this.mode == 1) {
+                if (big.x == 0 || big.x >= 23 || big.y == 0 || big.y >= 23) {
+                    big.reset();
                 }
             }
 
             //Set the time for the big
-            if (this.big == 1) {
-                this.bigCount += this.big * 2;
-                if (this.bigCount == 400) {
-                    this.big = 0;
+            if (big.check == 1) {
+                big.count += big.check;
+                if (big.count == 600) {
+                    big.check = 0;
+                    big.count = 0;
+                    big.reset();
                 }
             }
 
             //When the snake eat the big
-            if (this.big == 1) {
+            if (big.check == 1) {
                 let p = this.position[0];
 
-                if (p.x >= apple.x && p.x <= apple.x + this.d && p.y >= apple.y && p.y <= apple.y + this.d) {
-                    this.big = 0;
-                    score.value += (9 - (this.speed - 2)/2) * (10 - (this.bigCount - this.bigCount%40)/40);
-                    apple.x = (Math.random()*24).toFixed(0);
-                    apple.y = (Math.random()*24).toFixed(0);
+                if (p.x >= big.x * this.d && p.x <= big.x * this.d + this.d && p.y >= big.y * this.d && p.y <= big.y * this.d + this.d) {
+                    big.check = 0;
+                    big.count = 0;
+                    score.value += (9 - (this.speed - 2)/2) * (10 - (big.count - big.count%60)/60);
+                    big.reset();
                 }
             }
         }
@@ -434,18 +566,10 @@ const apple = {
 
     draw : function() {
         //Apple
-        if (state.current != state.getReady && snake.big == 0) {
+        if (state.current != state.getReady && big.check == 0) {
             ctx.beginPath();
             ctx.fillStyle = "#0000ff";
             ctx.arc(this.x * this.d + this.r, this.y * this.d + this.r, this.r, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-
-        //Big
-        if (state.current != state.getReady && snake.big == 1) {
-            ctx.beginPath();
-            ctx.fillStyle = "#ffff00";
-            ctx.arc(this.x * this.d + this.d, this.y * this.d + this.d, this.d, 0, 2 * Math.PI);
             ctx.fill();
         }
     },
@@ -453,6 +577,38 @@ const apple = {
     reset : function() {
         this.x = (Math.random()*24).toFixed(0);
         this.y = (Math.random()*24).toFixed(0);
+    }
+}
+
+//Big
+const big = {
+    x : (Math.random()*23).toFixed(0),
+    y : (Math.random()*23).toFixed(0),
+    d : 20,
+
+    count : 0,
+    check : 0,
+
+    draw : function() {
+        //Big
+        if (state.current != state.getReady && this.check == 1) {
+            ctx.beginPath();
+            ctx.fillStyle = "#ffff00";
+            ctx.arc(this.x * this.d + this.d, this.y * this.d + this.d, this.d, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        //Big time
+        if (state.current != state.getReady && this.check == 1) {
+            ctx.fillStyle = "#ffff00";
+            ctx.fillRect(60, cvs.height - 40, 120 - big.count/5, 30);
+        }
+    },
+
+    reset : function() {
+        this.check = 0;
+        this.x = (Math.random()*23).toFixed(0);
+        this.y = (Math.random()*23).toFixed(0);
     }
 }
 
@@ -485,50 +641,6 @@ const score = {
     }
 }
 
-//Game
-const game = {
-    count : 0,
-    cardinal : 0,
-    distance : 50,
-
-    draw : function() {
-        //Draw pause button (in game state) and play button (in pause state)
-        if (state.current == state.game) {
-            ctx.drawImage(pause, 0, 0, 128, 128, cvs.width - this.distance, cvs.height - this.distance, this.distance, this.distance);
-        }else if (state.current == state.pause) {
-            ctx.drawImage(play, 0, 0, 128, 128, cvs.width - this.distance, cvs.height - this.distance, this.distance, this.distance);
-        }
-
-        //Draw the bar of time delay before continue play game
-        if (this.cardinal > 0) {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(cvs.width - 250, cvs.height - 40, 90 - this.count, 30);
-        }
-
-        //Draw home button
-        if (state.current == state.game || state.current == state.pause) {
-            ctx.drawImage(home, cvs.width - this.distance * 3, cvs.height - this.distance, this.distance, this.distance);
-        }
-
-        //Draw replay button
-        if (state.current == state.game || state.current == state.pause) {
-            ctx.drawImage(reload, cvs.width - this.distance * 2, cvs.height - this.distance, this.distance, this.distance);
-        }
-    },
-
-    update : function() {
-        //Delay the game a bit after click the play button
-        if (this.cardinal > 0) {
-            this.count += this.cardinal;
-            if (this.count == 90) {
-                state.current = state.game;
-                this.cardinal = 0;
-                this.count = 0;
-            }
-        }
-    }
-}
-
 //Draw
 function draw() {
     //Black background
@@ -556,8 +668,9 @@ function draw() {
     apple.draw();
     score.draw();
     game.draw();
+    big.draw();
     over.draw();
-    console.log(snake.big)
+    console.log(clickKey.downX)
 }
 
 //Update
